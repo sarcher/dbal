@@ -502,20 +502,25 @@ class PostgreSqlPlatform extends AbstractPlatform
                 $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
             }
 
-            if ($columnDiff->hasChanged('autoincrement')) {
-                if ($column->getAutoincrement()) {
-                    // add autoincrement
-                    $seqName = $this->getIdentitySequenceName($diff->name, $oldColumnName);
+            // add a sequence if autoincrement is requested and there is no existing sequence,
+            // or if a sequence was explicitly requested
+            if (($columnDiff->hasChanged('autoincrement') && $column->getAutoincrement() && empty($columnDiff->fromColumn->getSequence()))
+                || ($columnDiff->hasChanged('sequence') && !empty($column->getSequence()))) {
 
-                    $sql[] = "CREATE SEQUENCE " . $seqName;
-                    $sql[] = "SELECT setval('" . $seqName . "', (SELECT MAX(" . $oldColumnName . ") FROM " . $diff->getName()->getQuotedName($this) . "))";
-                    $query = "ALTER " . $oldColumnName . " SET DEFAULT nextval('" . $seqName . "')";
-                    $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
-                } else {
-                    // Drop autoincrement, but do NOT drop the sequence. It might be re-used by other tables or have
-                    $query = "ALTER " . $oldColumnName . " " . "DROP DEFAULT";
-                    $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
-                }
+                // add autoincrement sequence
+                $seqName = $this->getIdentitySequenceName($diff->name, $oldColumnName);
+
+                $sql[] = "CREATE SEQUENCE " . $seqName;
+                $sql[] = "SELECT setval('" . $seqName . "', (SELECT MAX(" . $oldColumnName . ") FROM " . $diff->getName()->getQuotedName($this) . "))";
+                $query = "ALTER " . $oldColumnName . " SET DEFAULT nextval('" . $seqName . "')";
+                $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
+
+            } else if ($columnDiff->hasChanged('autoincrement') && !$column->getAutoincrement() && empty($column->getSequence())) {
+
+                // drop autoincrement, but do NOT drop the sequence as it might be in use elsewhere, and
+                // PostgreSQL will auto-drop a previously-set identity sequence created via SERIAL
+                $query = "ALTER " . $oldColumnName . " " . "DROP DEFAULT";
+                $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
             }
 
             if ($columnDiff->hasChanged('comment')) {
@@ -817,7 +822,7 @@ class PostgreSqlPlatform extends AbstractPlatform
             }
         );
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -825,8 +830,8 @@ class PostgreSqlPlatform extends AbstractPlatform
     {
         if (in_array(strtolower($item), $this->booleanLiterals['false'], true)) {
             return false;
-        } 
-          
+        }
+
         return parent::convertFromBoolean($item);
     }
 

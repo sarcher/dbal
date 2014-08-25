@@ -2,9 +2,12 @@
 
 namespace Doctrine\Tests\DBAL\Platforms;
 
+use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Schema\ColumnDiff;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Schema\TableDiff;
+use Doctrine\DBAL\Types\Type;
 
 abstract class AbstractPostgreSqlPlatformTestCase extends AbstractPlatformTestCase
 {
@@ -671,5 +674,219 @@ abstract class AbstractPostgreSqlPlatformTestCase extends AbstractPlatformTestCa
     protected function getGenerateAlterDefaultSql()
     {
         return array("ALTER TABLE test_table ALTER test_column SET DEFAULT 'some_value'");
+    }
+
+    /**
+     * Column currently has a sequence generator in place,
+     * and autoincrement is requested.
+     *
+     * Expected: No change; existing sequence used.
+     */
+    public function testAlterSchemaSequenceToAutoincrement()
+    {
+        $oldColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => true,
+            'sequence' => 'test_id_seq'
+        ));
+
+        $newColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => true
+        ));
+
+        $columnDiff = new ColumnDiff(
+            'id',
+            $newColumn,
+            array(
+                'autoincrement',
+                'sequence'
+            ),
+            $oldColumn
+        );
+
+        $tableDiff = new TableDiff(
+            'test_table',
+            array(),
+            array(
+                $columnDiff
+            )
+        );
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $this->assertEmpty($sql);
+    }
+
+    /**
+     * Column currently has a sequence generator in place,
+     * but the removal of any generation is requested.
+     *
+     * Expected: Drop default only.
+     */
+    public function testAlterSchemaSequenceToInteger()
+    {
+        $oldColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => true,
+            'sequence' => 'test_id_seq'
+        ));
+
+        $newColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => false
+        ));
+
+        $columnDiff = new ColumnDiff(
+            'id',
+            $newColumn,
+            array(
+                'autoincrement',
+                'sequence'
+            ),
+            $oldColumn
+        );
+
+        $tableDiff = new TableDiff(
+            'test_table',
+            array(),
+            array(
+                $columnDiff
+            )
+        );
+
+        $expectedSql = array(
+            'ALTER TABLE test_table ALTER id DROP DEFAULT'
+        );
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $this->assertEquals($expectedSql, $sql);
+    }
+
+    /**
+     * Column currently has a sequence generator in place,
+     * and a sequence is requested (note that the case
+     * where the sequence has changed to a specific name
+     * is not supported and no change will be made).
+     *
+     * Expected: No change; existing sequence used.
+     */
+    public function testAlterSchemaSequenceToSequence()
+    {
+        $oldColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => true,
+            'sequence' => 'test_id_seq'
+        ));
+
+        $newColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => false,
+            'sequence' => 'test_id_seq'
+        ));
+
+        $columnDiff = new ColumnDiff(
+            'id',
+            $newColumn,
+            array(
+                'autoincrement'
+            ),
+            $oldColumn
+        );
+
+        $tableDiff = new TableDiff(
+            'test_table',
+            array(),
+            array(
+                $columnDiff
+            )
+        );
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $this->assertEmpty($sql);
+    }
+
+    /**
+     * Column is currently an integer, but autoincrement
+     * is requested.
+     *
+     * Expected: Sequence created, default set to nextval(sequence).
+     */
+    public function testAlterSchemaIntegerToAutoincrement()
+    {
+        $oldColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => false
+        ));
+
+        $newColumn = new Column('id', Type::getType('integer'), array(
+            'autoincrement' => true
+        ));
+
+        $columnDiff = new ColumnDiff(
+            'id',
+            $newColumn,
+            array(
+                'autoincrement'
+            ),
+            $oldColumn
+        );
+
+        $tableDiff = new TableDiff(
+            'test_table',
+            array(),
+            array(
+                $columnDiff
+            )
+        );
+
+        $expectedSql = array(
+            "CREATE SEQUENCE test_table_id_seq",
+            "SELECT setval('test_table_id_seq', (SELECT MAX(id) FROM test_table))",
+            "ALTER TABLE test_table ALTER id SET DEFAULT nextval('test_table_id_seq')"
+        );
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $this->assertEquals($expectedSql, $sql);
+    }
+
+    /**
+     * Column is currently an integer, but sequence
+     * is requested.
+     *
+     * Expected: Sequence created, default set to nextval(sequence).
+     */
+    public function testAlterSchemaIntegerToSequence()
+    {
+        $oldColumn = new Column('id', Type::getType('integer'), array(
+            'sequence' => null
+        ));
+
+        $newColumn = new Column('id', Type::getType('integer'), array(
+            'sequence' => 'test_id_seq'
+        ));
+
+        $columnDiff = new ColumnDiff(
+            'id',
+            $newColumn,
+            array(
+                'sequence'
+            ),
+            $oldColumn
+        );
+
+        $tableDiff = new TableDiff(
+            'test_table',
+            array(),
+            array(
+                $columnDiff
+            )
+        );
+
+        $expectedSql = array(
+            "CREATE SEQUENCE test_table_id_seq",
+            "SELECT setval('test_table_id_seq', (SELECT MAX(id) FROM test_table))",
+            "ALTER TABLE test_table ALTER id SET DEFAULT nextval('test_table_id_seq')"
+        );
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $this->assertEquals($expectedSql, $sql);
     }
 }

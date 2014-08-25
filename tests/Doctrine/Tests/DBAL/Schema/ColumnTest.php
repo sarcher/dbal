@@ -48,6 +48,7 @@ class ColumnTest extends \PHPUnit_Framework_TestCase
             'fixed' => true,
             'unsigned' => true,
             'autoincrement' => false,
+            'sequence' => null,
             'columnDefinition' => null,
             'comment' => null,
             'foo' => 'bar',

@@ -323,7 +323,9 @@ class PostgreSqlSchemaManager extends AbstractSchemaManager
 
         $matches = array();
 
+        $tableColumn['sequence'] = null;
         $autoincrement = false;
+
         if (preg_match("/^nextval\('(.*)'(::.*)?\)$/", $tableColumn['default'], $matches)) {
             $tableColumn['sequence'] = $matches[1];
             $tableColumn['default'] = null;
@@ -442,6 +444,7 @@ class PostgreSqlSchemaManager extends AbstractSchemaManager
             'fixed'         => $fixed,
             'unsigned'      => false,
             'autoincrement' => $autoincrement,
+            'sequence'      => $tableColumn['sequence'],
             'comment'       => $tableColumn['comment'],
         );
 

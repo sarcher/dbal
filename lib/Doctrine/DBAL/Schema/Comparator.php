@@ -384,7 +384,7 @@ class Comparator
 
         $changedProperties = array();
 
-        foreach (array('type', 'notnull', 'unsigned', 'autoincrement') as $property) {
+        foreach (array('type', 'notnull', 'unsigned', 'autoincrement', 'sequence') as $property) {
             if ($properties1[$property] != $properties2[$property]) {
                 $changedProperties[] = $property;
             }

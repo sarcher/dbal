@@ -76,6 +76,11 @@ class Column extends AbstractAsset
     protected $_autoincrement = false;
 
     /**
+     * @var string
+     */
+    protected $_sequence = null;
+
+    /**
      * @var array
      */
     protected $_platformOptions = array();
@@ -390,6 +395,25 @@ class Column extends AbstractAsset
     }
 
     /**
+     * @return string|null
+     */
+    public function getSequence()
+    {
+        return $this->_sequence;
+    }
+
+    /**
+     * @param string $sequence
+     *
+     * @return Column
+     */
+    public function setSequence($sequence)
+    {
+        $this->_sequence = $sequence;
+        return $this;
+    }
+
+    /**
      * @param string $comment
      *
      * @return Column
@@ -478,6 +502,7 @@ class Column extends AbstractAsset
             'fixed'         => $this->_fixed,
             'unsigned'      => $this->_unsigned,
             'autoincrement' => $this->_autoincrement,
+            'sequence'      => $this->_sequence,
             'columnDefinition' => $this->_columnDefinition,
             'comment' => $this->_comment,
         ), $this->_platformOptions, $this->_customSchemaOptions);
