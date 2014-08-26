@@ -504,8 +504,8 @@ class PostgreSqlPlatform extends AbstractPlatform
 
             // add a sequence if autoincrement is requested and there is no existing sequence,
             // or if a sequence was explicitly requested
-            if (($columnDiff->hasChanged('autoincrement') && $column->getAutoincrement() && empty($columnDiff->fromColumn->getSequence()))
-                || ($columnDiff->hasChanged('sequence') && !empty($column->getSequence()))) {
+            if (($columnDiff->hasChanged('autoincrement') && $column->getAutoincrement() && null == $columnDiff->fromColumn->getSequence())
+                || ($columnDiff->hasChanged('sequence') && null != $column->getSequence())) {
 
                 // add autoincrement sequence
                 $seqName = $this->getIdentitySequenceName($diff->name, $oldColumnName);
@@ -515,7 +515,7 @@ class PostgreSqlPlatform extends AbstractPlatform
                 $query = "ALTER " . $oldColumnName . " SET DEFAULT nextval('" . $seqName . "')";
                 $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
 
-            } else if ($columnDiff->hasChanged('autoincrement') && !$column->getAutoincrement() && empty($column->getSequence())) {
+            } else if ($columnDiff->hasChanged('autoincrement') && !$column->getAutoincrement() && null == $column->getSequence()) {
 
                 // drop autoincrement, but do NOT drop the sequence as it might be in use elsewhere, and
                 // PostgreSQL will auto-drop a previously-set identity sequence created via SERIAL
