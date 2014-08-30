@@ -855,4 +855,14 @@ class SQLAnywherePlatformTest extends AbstractPlatformTestCase
             'ALTER INDEX "foo" ON "schema"."table" RENAME TO "bar"',
         );
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getGenerateAlterDefaultSql()
+    {
+        return array(
+            "ALTER TABLE test_table ALTER test_column VARCHAR(255) DEFAULT 'some_value' NOT NULL"
+        );
+    }
 }

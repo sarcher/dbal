@@ -463,4 +463,15 @@ class DB2PlatformTest extends AbstractPlatformTestCase
             'RENAME INDEX "schema"."foo" TO "bar"',
         );
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getGenerateAlterDefaultSql()
+    {
+        return array(
+            "ALTER TABLE test_table ALTER test_column test_column VARCHAR(255) DEFAULT 'some_value' NOT NULL",
+            "CALL SYSPROC.ADMIN_CMD ('REORG TABLE test_table')"
+        );
+    }
 }

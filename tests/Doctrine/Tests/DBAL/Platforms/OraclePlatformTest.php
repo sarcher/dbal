@@ -334,7 +334,7 @@ class OraclePlatformTest extends AbstractPlatformTestCase
 
         $expectedSql = array(
             "ALTER TABLE mytable MODIFY (foo VARCHAR2(255) DEFAULT 'bla' NULL, baz VARCHAR2(255) DEFAULT 'bla' NOT NULL, metar VARCHAR2(2000) DEFAULT NULL NULL)",
-	);
+        );
         $this->assertEquals($expectedSql, $this->_platform->getAlterTableSQL($tableDiff));
     }
 
@@ -482,6 +482,16 @@ class OraclePlatformTest extends AbstractPlatformTestCase
         return array(
             'ALTER INDEX "schema"."create" RENAME TO "select"',
             'ALTER INDEX "schema"."foo" RENAME TO "bar"',
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getGenerateAlterDefaultSql()
+    {
+        return array(
+            "ALTER TABLE test_table MODIFY (test_column VARCHAR2(255) DEFAULT 'some_value' NULL)"
         );
     }
 }

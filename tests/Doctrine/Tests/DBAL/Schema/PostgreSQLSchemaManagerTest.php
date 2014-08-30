@@ -73,4 +73,138 @@ class PostgreSQLSchemaManagerTest extends \PHPUnit_Framework_TestCase
             $this->schemaManager->listSequences('database')
         );
     }
+
+    /**
+     * Verify that an existing datetime column in the database
+     * that is set to default to the current time will be correctly
+     * transformed to "CURRENT_TIMESTAMP" by the schema manager.
+     */
+    public function testDatetimeDefaultNow()
+    {
+        // simulate the results of executing the SQL generated
+        // by PostgreSqlPlatform::getListTableColumnsSQL()
+        $testColumns = array(
+            array(
+                'field' => 'test_field',
+                'type' => 'timestamptz',
+                'complete_type' => 'timestamp with time zone',
+                'length' => null,
+                'default' => 'now()',
+                'isnotnull' => false,
+                'collation' => null,
+                'comment' => null,
+                'domain_type' => null,
+                'domain_complete_type' => null,
+                'pri' => null
+            )
+        );
+
+        $this->connection->expects($this->at(1))
+            ->method('fetchAll')
+            ->will($this->returnValue($testColumns));
+
+        $this->schemaManager->getDatabasePlatform()->expects($this->any())
+            ->method('getDoctrineTypeMapping')
+            ->with($this->equalTo('timestamptz'))
+            ->will($this->returnValue('datetimetz'));
+
+        $this->schemaManager->getDatabasePlatform()->expects($this->any())
+            ->method('getCurrentTimestampSQL')
+            ->will($this->returnValue('CURRENT_TIMESTAMP'));
+
+        $columns = $this->schemaManager->listTableColumns('test_table');
+
+        $this->assertArrayHasKey('test_field', $columns);
+        $this->assertEquals('CURRENT_TIMESTAMP', $columns['test_field']->getDefault());
+    }
+
+    /**
+     * Verify that an existing datetimetz column in the database
+     * that is set to default to the current time will be correctly
+     * transformed to "CURRENT_TIMESTAMP" by the schema manager.
+     */
+    public function testDatetimeTzDefaultNow()
+    {
+        // simulate the results of executing the SQL generated
+        // by PostgreSqlPlatform::getListTableColumnsSQL()
+        $testColumns = array(
+            array(
+                'field' => 'test_field',
+                'type' => 'timestamp',
+                'complete_type' => 'timestamp without time zone',
+                'length' => null,
+                'default' => 'now()',
+                'isnotnull' => false,
+                'collation' => null,
+                'comment' => null,
+                'domain_type' => null,
+                'domain_complete_type' => null,
+                'pri' => null
+            )
+        );
+
+        $this->connection->expects($this->at(1))
+            ->method('fetchAll')
+            ->will($this->returnValue($testColumns));
+
+        $this->schemaManager->getDatabasePlatform()->expects($this->any())
+            ->method('getDoctrineTypeMapping')
+            ->with($this->equalTo('timestamp'))
+            ->will($this->returnValue('datetime'));
+
+        $this->schemaManager->getDatabasePlatform()->expects($this->any())
+            ->method('getCurrentTimestampSQL')
+            ->will($this->returnValue('CURRENT_TIMESTAMP'));
+
+        $columns = $this->schemaManager->listTableColumns('test_table');
+
+        $this->assertArrayHasKey('test_field', $columns);
+        $this->assertEquals('CURRENT_TIMESTAMP', $columns['test_field']->getDefault());
+    }
+
+    /**
+     * Verify that an existing datetimetz column in the database
+     * that is set to default to a timestamp value will be correctly
+     * handled by the schema manager.
+     */
+    public function testDatetimeTzDefaultTimestamp()
+    {
+        $testTimestamp = '2014-08-29 18:01:01.370568-07';
+
+        // simulate the results of executing the SQL generated
+        // by PostgreSqlPlatform::getListTableColumnsSQL()
+        $testColumns = array(
+            array(
+                'field' => 'test_field',
+                'type' => 'timestamptz',
+                'complete_type' => 'timestamp with time zone',
+                'length' => null,
+                'default' => "'" . $testTimestamp . "'::timestamp with time zone",
+                'isnotnull' => false,
+                'collation' => null,
+                'comment' => null,
+                'domain_type' => null,
+                'domain_complete_type' => null,
+                'pri' => null
+            )
+        );
+
+        $this->connection->expects($this->at(1))
+            ->method('fetchAll')
+            ->will($this->returnValue($testColumns));
+
+        $this->schemaManager->getDatabasePlatform()->expects($this->any())
+            ->method('getDoctrineTypeMapping')
+            ->with($this->equalTo('timestamptz'))
+            ->will($this->returnValue('datetimetz'));
+
+        $this->schemaManager->getDatabasePlatform()->expects($this->any())
+            ->method('getCurrentTimestampSQL')
+            ->will($this->returnValue('CURRENT_TIMESTAMP'));
+
+        $columns = $this->schemaManager->listTableColumns('test_table');
+
+        $this->assertArrayHasKey('test_field', $columns);
+        $this->assertEquals($testTimestamp, $columns['test_field']->getDefault());
+    }
 }

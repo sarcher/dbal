@@ -664,4 +664,12 @@ abstract class AbstractPostgreSqlPlatformTestCase extends AbstractPlatformTestCa
             $this->_platform->getCommentOnColumnSQL('mytable', 'id', null)
         );
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getGenerateAlterDefaultSql()
+    {
+        return array("ALTER TABLE test_table ALTER test_column SET DEFAULT 'some_value'");
+    }
 }

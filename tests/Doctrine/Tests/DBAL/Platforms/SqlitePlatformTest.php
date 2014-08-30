@@ -515,7 +515,7 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             'INSERT INTO mytable (unquoted, "where", "foo", reserved_keyword, "from", "bar", quoted, "and", "baz") SELECT unquoted1, unquoted2, unquoted3, "create", "table", "select", "quoted1", "quoted2", "quoted3" FROM __temp__mytable',
             'DROP TABLE __temp__mytable',
         );
-	}
+    }
 
     /**
      * {@inheritdoc}
@@ -550,6 +550,20 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
         $this->markTestIncomplete(
             'Test currently produces broken SQL due to SQLLitePlatform::getAlterTable being broken ' .
             'when used with schemas.'
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getGenerateAlterDefaultSql()
+    {
+        return array(
+            "CREATE TEMPORARY TABLE __temp__test_table AS SELECT test_column FROM test_table",
+            "DROP TABLE test_table",
+            "CREATE TABLE test_table (test_column VARCHAR(255) DEFAULT 'some_value' NOT NULL)",
+            "INSERT INTO test_table (test_column) SELECT test_column FROM __temp__test_table",
+            "DROP TABLE __temp__test_table"
         );
     }
 }

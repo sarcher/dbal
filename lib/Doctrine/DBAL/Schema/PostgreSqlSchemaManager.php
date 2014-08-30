@@ -420,6 +420,12 @@ class PostgreSqlSchemaManager extends AbstractSchemaManager
             case 'year':
                 $length = null;
                 break;
+            case 'timestamp':
+            case 'timestamptz':
+                if ($tableColumn['default'] == 'now()') {
+                    $tableColumn['default'] = $this->_platform->getCurrentTimestampSQL();
+                }
+                break;
         }
 
         if ($tableColumn['default'] && preg_match("('([^']+)'::)", $tableColumn['default'], $match)) {

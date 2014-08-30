@@ -5,6 +5,8 @@ namespace Doctrine\Tests\DBAL\Platforms;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Events;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Schema\ColumnDiff;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Index;
@@ -946,4 +948,46 @@ abstract class AbstractPlatformTestCase extends \Doctrine\Tests\DbalTestCase
             $this->_platform->quoteStringLiteral($c)
         );
     }
+
+    /**
+     * Verify that setting a string column to have a default value
+     * does generate the correct ALTER statement.
+     */
+    public function testCompareDefaultString()
+    {
+        $oldColumn = new Column('test_column', Type::getType('string'), array(
+            'default' => null,
+            'length' => 255
+        ));
+
+        $newColumn = new Column('test_column', Type::getType('string'), array(
+            'default' => 'some_value',
+            'length' => 255
+        ));
+
+        $columnDiff = new ColumnDiff(
+            'test_column',
+            $newColumn,
+            array(
+                'default'
+            ),
+            $oldColumn
+        );
+
+        $tableDiff = new TableDiff('test_table');
+        $tableDiff->fromTable = new Table('test_table');
+        $tableDiff->fromTable->addColumn('test_column', 'string');
+        $tableDiff->changedColumns[] = $columnDiff;
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $this->assertEquals($this->getGenerateAlterDefaultSql(), $sql);
+    }
+
+    /**
+     * Return ALTER statement to set a string default.
+     *
+     * @return string
+     */
+    abstract protected function getGenerateAlterDefaultSql();
 }
